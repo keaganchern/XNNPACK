@@ -695,6 +695,92 @@
 #endif  // XNN_ENABLE_RISCV_VECTOR && XNN_ARCH_RISCV
 
 
+#if XNN_ENABLE_RISCV_VECTOR && XNN_ARCH_RISCV
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U2V, elements_eq_2v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    RAddStoreExpMinusMaxMicrokernelTester()
+      .elements(2 * xnn_init_hardware_config()->vlenb / sizeof(float))
+      .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u2v, nullptr);
+  }
+
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U2V, elements_div_2v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    for (size_t elements = 4 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements < 20 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements += 2 * xnn_init_hardware_config()->vlenb / sizeof(float)) {
+      RAddStoreExpMinusMaxMicrokernelTester()
+        .elements(elements)
+        .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u2v, nullptr);
+    }
+  }
+
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U2V, elements_lt_2v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    for (size_t elements = 1;
+                elements < 2 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements++) {
+      RAddStoreExpMinusMaxMicrokernelTester()
+        .elements(elements)
+        .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u2v, nullptr);
+    }
+  }
+
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U2V, elements_gt_2v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    for (size_t elements = 2 * xnn_init_hardware_config()->vlenb / sizeof(float) + 1;
+                elements < 4 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements += 4) {
+      RAddStoreExpMinusMaxMicrokernelTester()
+        .elements(elements)
+        .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u2v, nullptr);
+    }
+  }
+#endif  // XNN_ENABLE_RISCV_VECTOR && XNN_ARCH_RISCV
+
+
+#if XNN_ENABLE_RISCV_VECTOR && XNN_ARCH_RISCV
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U4V, elements_eq_4v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    RAddStoreExpMinusMaxMicrokernelTester()
+      .elements(4 * xnn_init_hardware_config()->vlenb / sizeof(float))
+      .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v, nullptr);
+  }
+
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U4V, elements_div_4v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    for (size_t elements = 8 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements < 40 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements += 4 * xnn_init_hardware_config()->vlenb / sizeof(float)) {
+      RAddStoreExpMinusMaxMicrokernelTester()
+        .elements(elements)
+        .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v, nullptr);
+    }
+  }
+
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U4V, elements_lt_4v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    for (size_t elements = 1;
+                elements < 4 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements++) {
+      RAddStoreExpMinusMaxMicrokernelTester()
+        .elements(elements)
+        .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v, nullptr);
+    }
+  }
+
+  TEST(F32_RADDSTOREEXPMINUSMAX__RVV_RR2_P6_O_U4V, elements_gt_4v) {
+    TEST_REQUIRES_ARCH_FLAGS(xnn_arch_riscv_vector);
+    for (size_t elements = 4 * xnn_init_hardware_config()->vlenb / sizeof(float) + 1;
+                elements < 8 * xnn_init_hardware_config()->vlenb / sizeof(float);
+                elements += 8) {
+      RAddStoreExpMinusMaxMicrokernelTester()
+        .elements(elements)
+        .Test(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v, nullptr);
+    }
+  }
+#endif  // XNN_ENABLE_RISCV_VECTOR && XNN_ARCH_RISCV
+
+
 #if XNN_ENABLE_SSE2 && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
   TEST(F32_RADDSTOREEXPMINUSMAX__SSE2_RR2_P5_U4, elements_eq_4) {
     TEST_REQUIRES_ARCH_FLAGS(xnn_arch_x86_sse2);

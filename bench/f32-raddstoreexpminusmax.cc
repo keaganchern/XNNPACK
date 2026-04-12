@@ -204,6 +204,18 @@ BENCHMARK_CAPTURE(f32_raddstoreexpminusmax, rvv_rr2_p6_u4v,
                   xnn_arch_riscv_vector)
     ->Apply(benchmark::utils::UnaryElementwiseParameters<float, float>)
     ->UseRealTime();
+BENCHMARK_CAPTURE(f32_raddstoreexpminusmax, rvv_rr2_p6_o_u2v,
+                  xnn_f32_rmax_ukernel__rvv_u8v,
+                  xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u2v, nullptr,
+                  xnn_arch_riscv_vector)
+    ->Apply(benchmark::utils::UnaryElementwiseParameters<float, float>)
+    ->UseRealTime();
+BENCHMARK_CAPTURE(f32_raddstoreexpminusmax, rvv_rr2_p6_o_u4v,
+                  xnn_f32_rmax_ukernel__rvv_u8v,
+                  xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v, nullptr,
+                  xnn_arch_riscv_vector)
+    ->Apply(benchmark::utils::UnaryElementwiseParameters<float, float>)
+    ->UseRealTime();
 #endif  // XNN_ARCH_RISCV && XNN_ENABLE_RISCV_VECTOR
 
 #if XNN_ENABLE_AVX256SKX && (XNN_ARCH_X86 || XNN_ARCH_X86_64)

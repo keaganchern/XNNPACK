@@ -111,7 +111,7 @@ static void init_f32_raddstoreexpminusmax_config_impl(struct xnn_raddstoreexpmin
       config->ukernel = XNN_INIT_RADDSTOREEXPMINUSMAX_UKERNEL(xnn_f32_raddstoreexpminusmax_ukernel__wasmsimd_rr2_p5_u16_acc2);
     #endif
   #elif XNN_ARCH_RISCV && XNN_ENABLE_RISCV_VECTOR
-    config->ukernel = XNN_INIT_RADDSTOREEXPMINUSMAX_UKERNEL(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_u4v);
+    config->ukernel = XNN_INIT_RADDSTOREEXPMINUSMAX_UKERNEL(xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v);
   #elif XNN_ARCH_HEXAGON && XNN_ENABLE_HVX
     const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
     assert(hardware_config != NULL);

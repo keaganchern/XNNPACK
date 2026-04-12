@@ -29,6 +29,7 @@ SET(PROD_RVV_MICROKERNEL_SRCS
   src/f32-maxpool/gen/f32-maxpool-9p-minmax-rvv-u2v.c
   src/f32-qs8-vcvt/gen/f32-qs8-vcvt-rvv-u2v.c
   src/f32-qu8-vcvt/gen/f32-qu8-vcvt-rvv-u2v.c
+  src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-rvv-rr2-p6-o-u4v.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-rvv-rr2-p6-u4v.c
   src/f32-rdminmax/gen/f32-rdmax-2p2x-rvv-u8v.c
   src/f32-rdminmax/gen/f32-rdmin-2p2x-rvv-u8v.c
@@ -164,6 +165,7 @@ SET(NON_PROD_RVV_MICROKERNEL_SRCS
   src/f32-qu8-vcvt/gen/f32-qu8-vcvt-rvv-u1v.c
   src/f32-qu8-vcvt/gen/f32-qu8-vcvt-rvv-u4v.c
   src/f32-qu8-vcvt/gen/f32-qu8-vcvt-rvv-u8v.c
+  src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-rvv-rr2-p6-o-u2v.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-rvv-rr2-p6-u2v.c
   src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-rvv-u1v.c
   src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-rvv-u2v.c

@@ -24,6 +24,8 @@
 # RISC-V Vector
 - name: xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_u2v
 - name: xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_u4v
+- name: xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u2v
+- name: xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v
 
 # x86 SSE2
 - name: xnn_f32_raddstoreexpminusmax_ukernel__sse2_rr2_p5_u4

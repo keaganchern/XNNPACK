@@ -114,6 +114,11 @@ DECLARE_F32_RADDSTOREEXPMINUSMAX_UKERNEL_FUNCTION(
     xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_u4v)
 
 DECLARE_F32_RADDSTOREEXPMINUSMAX_UKERNEL_FUNCTION(
+    xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u2v)
+DECLARE_F32_RADDSTOREEXPMINUSMAX_UKERNEL_FUNCTION(
+    xnn_f32_raddstoreexpminusmax_ukernel__rvv_rr2_p6_o_u4v)
+
+DECLARE_F32_RADDSTOREEXPMINUSMAX_UKERNEL_FUNCTION(
     xnn_f32_raddstoreexpminusmax_ukernel__sse2_rr2_p5_u4)
 DECLARE_F32_RADDSTOREEXPMINUSMAX_UKERNEL_FUNCTION(
     xnn_f32_raddstoreexpminusmax_ukernel__sse2_rr2_p5_u8_acc2)
