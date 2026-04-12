@@ -15,6 +15,7 @@
 #include "ynnpack/base/type.h"
 #include "ynnpack/include/ynnpack.h"
 #include "ynnpack/kernels/binary/binary.h"
+#include "ynnpack/kernels/dequantize_dot/dequantize_dot.h"
 #include "ynnpack/kernels/lut/lut.h"
 #include "ynnpack/kernels/ternary/ternary.h"
 #include "ynnpack/kernels/unary/unary.h"
@@ -25,7 +26,6 @@
 #include "slinky/builder/pipeline.h"
 #include "slinky/runtime/buffer.h"
 #include "slinky/runtime/expr.h"
-#include "slinky/runtime/print.h"
 #include "slinky/runtime/stmt.h"
 
 using ynn::operator<<;  // NOLINT(misc-unused-using-decls)
@@ -44,7 +44,7 @@ auto make_unary_elementwise_impl(unary_kernel_fn kernel, unary_params params) {
 
     // We don't support broadcasting of `a` here in the innermost
     // dimension (and it would waste computation).
-    assert(is_continguous(a_dims[0], a.elem_size));
+    assert(is_contiguous(a_dims[0], a.elem_size));
 
     const slinky::dim& x_n = x_dims[0];
     const slinky::dim& a_m = a_dims[1];
@@ -70,8 +70,8 @@ auto make_lut_impl(lut_kernel_fn kernel) {
 
     // We don't support broadcasting of `a` here in the innermost
     // dimension (and it would waste computation).
-    assert(is_continguous(a_dims[0], a.elem_size));
-    assert(is_continguous(x_dims[0], x.elem_size));
+    assert(is_contiguous(a_dims[0], a.elem_size));
+    assert(is_contiguous(x_dims[0], x.elem_size));
 
     const slinky::dim& x_n = x_dims[0];
 
@@ -147,18 +147,55 @@ auto make_ternary_elementwise_impl(ternary_kernel_fn kernel) {
       };
 }
 
-std::pair<float, int32_t> GetScalarQuantization(
-    const ynn_runtime& runtime, const ynn_runtime_value& value) {
-  std::pair<float, int32_t> result;
-  result.first =
-      value.scale_id != YNN_INVALID_VALUE_ID
-          ? runtime.value(value.scale_id).static_scalar_value<float>()
-          : 1.0f;
-  result.second =
-      value.zero_point_id != YNN_INVALID_VALUE_ID
-          ? runtime.value(value.zero_point_id).static_scalar_value<int32_t>()
-          : 0;
-  return result;
+auto make_dequantize_dot_impl(dequantize_dot_kernel_fn kernel,
+                              dequantize_dot_params params) {
+  return [kernel, params](slinky::raw_buffer dot, slinky::raw_buffer a_offset,
+                          slinky::raw_buffer b_offset,
+                          slinky::raw_buffer a_scale,
+                          slinky::raw_buffer b_scale, slinky::raw_buffer offset,
+                          slinky::raw_buffer output) -> slinky::index_t {
+    using slinky::in_bounds;
+
+    const slinky::dim& n = slice_dim0(output);
+
+    assert(is_contiguous(n, output.elem_size));
+    assert(is_contiguous(dot.dim(0), dot.elem_size));
+    assert(is_broadcast(a_offset.dim(0)));
+
+    dot.slice(0, in_bounds{n.min()});
+    a_offset.slice(0);
+    assert(is_broadcast(a_scale.dim(0)));
+    a_scale.slice(0);
+    const slinky::dim& b_offset_n = slice_dim0(b_offset, in_bounds{n.min()});
+    const slinky::dim& b_scale_n = slice_dim0(b_scale, in_bounds{n.min()});
+    const slinky::dim& offset_n = slice_dim0(offset, in_bounds{n.min()});
+
+    // Get the m dimension. rank 1 buffers are common, so try to optimize
+    // for that case.
+    assert(is_broadcast(b_offset.dim(0)));
+    assert(is_broadcast(b_scale.dim(0)));
+    assert(is_broadcast(offset.dim(0)));
+    const slinky::dim& m = slice_dim0(output);
+    const slinky::dim& dot_m = slice_dim0(dot, in_bounds{m.min()});
+    const slinky::dim& a_offset_m = slice_dim0(a_offset, in_bounds{m.min()});
+    const slinky::dim& a_scale_m = slice_dim0(a_scale, in_bounds{m.min()});
+    b_offset.slice(0);
+    offset.slice(0);
+    b_scale.slice(0);
+
+    slinky::for_each_element(
+        [&](void* output, const void* dot, const void* a_offset,
+            const void* b_offset, const void* offset, const void* a_scale,
+            const void* b_scale) {
+          kernel(m.extent(), n.extent(), dot_m.stride(), dot,
+                 a_offset_m.stride(), a_offset, b_offset_n.stride(), b_offset,
+                 offset_n.stride(), offset, a_scale_m.stride(), a_scale,
+                 b_scale_n.stride(), b_scale, m.stride(), output, &params);
+        },
+        output, dot, a_offset, b_offset, offset, a_scale, b_scale);
+
+    return 0;
+  };
 }
 
 ynn_status create_unary(const ynn_node& node, ynn_runtime& runtime,
@@ -335,7 +372,7 @@ void infer_shape(ynn_node& node, ynn_subgraph& subgraph) {
 
 void define_unary(ynn_subgraph& subgraph, ynn_node& node, uint32_t input_a_id,
                   uint32_t output_id, ynn_unary_operator op,
-                  unary_kernel_fn kernel, unary_params params) {
+                  unary_kernel_fn kernel, const unary_params& params) {
   // Make the node.
   node.inputs = {input_a_id};
   node.outputs = {output_id};
@@ -396,7 +433,69 @@ void define_lut(ynn_subgraph& subgraph, ynn_node& node, uint32_t input_id,
   };
 }
 
-extern "C" {
+bool define_dequantize_dot(ynn_subgraph& subgraph, ynn_node& node,
+                           ynn_type output_type, uint32_t dot_id,
+                           uint32_t a_offset_id, uint32_t b_offset_id,
+                           uint32_t a_scale_id, uint32_t b_scale_id,
+                           uint32_t offset_id, uint32_t& output_id,
+                           const dequantize_dot_params& params) {
+  dequantize_dot_kernel_fn kernel = get_dequantize_dot_kernel(output_type);
+  if (kernel == nullptr) {
+    return false;
+  }
+
+  const ynn_value& dot = subgraph.value(dot_id);
+  ynn_value& output = subgraph.get_output_value(&output_id, output_type);
+
+  // Propagate shape from dot.
+  output.extents = dot.extents;
+
+  node.inputs = {dot_id,     a_offset_id, b_offset_id,
+                 a_scale_id, b_scale_id,  offset_id};
+  node.outputs = {output_id};
+  node.op = ynn_node::dequantize_dot{params};
+
+  node.create = [kernel](const ynn_node& node, ynn_runtime& runtime) {
+    const ynn_node::dequantize_dot& op =
+        std::get<ynn_node::dequantize_dot>(node.op);
+    const ynn_runtime_value& dot = runtime.value(node.inputs[0]);
+    const ynn_runtime_value& a_offset = runtime.value(node.inputs[1]);
+    const ynn_runtime_value& b_offset = runtime.value(node.inputs[2]);
+    const ynn_runtime_value& a_scale = runtime.value(node.inputs[3]);
+    const ynn_runtime_value& b_scale = runtime.value(node.inputs[4]);
+    const ynn_runtime_value& offset = runtime.value(node.inputs[5]);
+    ynn_runtime_value& output = runtime.value(node.outputs[0]);
+
+    output.make_buffer(runtime);
+
+    std::vector<slinky::var> dims = runtime.globals.make_dims(output.rank());
+
+    slinky::box_expr bounds;
+    for (size_t i = 0; i < dims.size(); ++i) {
+      bounds.push_back(slinky::point(dims[i]));
+    }
+
+    slinky::call_stmt::attributes attrs;
+    attrs.name = "dequantize_dot";
+    attrs.allow_in_place = compute_allow_in_place(node, *runtime.subgraph);
+    auto func = slinky::func::make(make_dequantize_dot_impl(kernel, op.params),
+                                   {{dot.buffer, bounds},
+                                    {a_offset.buffer, bounds},
+                                    {b_offset.buffer, bounds},
+                                    {a_scale.buffer, bounds},
+                                    {b_scale.buffer, bounds},
+                                    {offset.buffer, bounds}},
+                                   {{output.buffer, dims}}, std::move(attrs));
+
+    auto sched = runtime.make_schedule(dims, output.buffer, node.outputs[0]);
+    func.user_data() = sched.get();
+    runtime.scheduling_info_storage.push_back(std::move(sched));
+
+    runtime.funcs.push_back(std::move(func));
+    return ynn_status_success;
+  };
+  return true;
+}
 
 ynn_status define_unary(ynn_subgraph_t subgraph, ynn_unary_operator op,
                         uint32_t input_a_id, unary_params params,
@@ -446,6 +545,8 @@ ynn_status define_unary(ynn_subgraph_t subgraph, ynn_unary_operator op,
   subgraph->add_node(std::move(node));
   return ynn_status_success;
 }
+
+extern "C" {
 
 ynn_status ynn_define_unary(ynn_subgraph_t subgraph, ynn_unary_operator op,
                             uint32_t input_a_id, uint32_t* output_id,
